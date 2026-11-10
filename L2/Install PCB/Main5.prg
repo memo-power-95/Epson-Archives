@@ -1,3 +1,9 @@
+'MOD@@ Guillermo Carrillo - v2.4 PROBADA Top Cover LINEA 1 (sobre el Main que vino de la actualizacion)
+'  Probado en linea: AccelFoto, AccelTrabajo e ImpulsoPTP en 100. TomaDirecta en False.
+'  EsperaAbrir (0.2) y PesoCarga (5) sin cambio. Valor seguro de cada opcion en su comentario.
+'  Mismas opciones de velocidad que la Install L2: 6 AccelFoto, 7 AccelTrabajo, 8 TomaDirecta,
+'  9 MedirTiempos, 10 PesoCarga/InerciaCarga, 11 ImpulsoPTP, 12 EsperaAbrir. De fabrica IGUAL que antes.
+'  NO se tocaron las rutinas de NG (Throw_NG / Photo_NG de 3 y de 12). Archivo solo ASCII y CRLF.
 'MOD@@ Guillermo Carrillo - v2.1.0 (Install PCB): cambios para bajar el tiempo de ciclo
 '  1. Toma (010), colocacion (011) y posicion (015) ya no leen ni reescriben robot1.pts.
 '  2. Colocacion: sin el Move que no movia; la espera antes de revisar la presion bajo de 0.1 a 0.05 s.
@@ -24,6 +30,12 @@ Global Preserve Real R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R14
 Global Preserve String S1$, S2$, S3$(15), S4$, S5$, S6$, S7$, S8$, S9$, S10$, S11$, S12$, S13$, S14$, S15$, S16$, S17$, S18$, S19$, S20$(30)
 Global Integer CalTomaGripper   'MOD@@ Guillermo Carrillo - v1.0.6.7.6 prueba de toma (gripper abajo, 0 = ninguno)
 Global Boolean AntToma, AntColoca   'MOD@@ Guillermo Carrillo - v2.1.0 opcion 4 (se fijan en main)
+Global Integer AccelFoto, AccelTrabajo   'MOD@@ Guillermo Carrillo - v2.4 opciones 6 y 7 (se fijan en main)
+Global Boolean TomaDirecta   'MOD@@ Guillermo Carrillo - v2.4 opcion 8 (se fija en main)
+Global Boolean MedirTiempos   'MOD@@ Guillermo Carrillo - v2.4 opcion 9 (se fija en main)
+Global Real PesoCarga, InerciaCarga   'MOD@@ Guillermo Carrillo - v2.4 opcion 10 (se fijan en main)
+Global Integer ImpulsoPTP   'MOD@@ Guillermo Carrillo - v2.4 opcion 11 (se fija en main)
+Global Real EsperaAbrir   'MOD@@ Guillermo Carrillo - v2.4 opcion 12 (se fija en main)
 
 Function main
 ''''''''''''''''''''''''''''''' TOP_TLA_Station_3  '''''''''''''''''''''''''''''''''''''
@@ -36,17 +48,42 @@ Call Init
   
 '--- Robot parameter settings  ---
 Tool 0
-Weight 5                      'load setting 
+'MOD@@ Guillermo Carrillo - v2.4 opciones 6 a 12. Con estos valores la maquina queda IGUAL que antes.
+'  Cambiar UNO a la vez, Build e Inicializar, y probar:
+'  AccelFoto: 70 = como antes. Probar 85 y luego 100. Si la vision falla (foto movida), regresar.
+'  AccelTrabajo: 70 = como antes. Probar 100. Si la toma sale descentrada, 85.
+'  TomaDirecta: False = como antes. True = tomar como la Top Assy (sin acercamiento ni bajada lenta).
+'  MedirTiempos: True = imprime en la consola el tiempo de cada comando (T=segundos RX/TX). No cambia movimientos.
+'  PesoCarga: peso real (kg) de la herramienta con grippers y pieza. Antes 5. NUNCA menos que el real.
+'  InerciaCarga: 0 = no se cambia. ImpulsoPTP: 75 = como antes; 100 = mas rapido en tramos cortos.
+'  EsperaAbrir: segundos que espera el gripper al abrir. 0.2 = como antes. Probar 0.15.
+AccelFoto = 100         'MOD@@ Guillermo Carrillo - v2.4 PROBADA al 100 (segura: 70)
+AccelTrabajo = 100      'MOD@@ Guillermo Carrillo - v2.4 PROBADA al 100 (segura: 70)
+TomaDirecta = False
+MedirTiempos = False
+PesoCarga = 5
+InerciaCarga = 0
+ImpulsoPTP = 100        'MOD@@ Guillermo Carrillo - v2.4 PROBADA al 100 (segura: 75)
+EsperaAbrir = 0.2
+If AccelFoto < 10 Or AccelFoto > 100 Then AccelFoto = 70
+If AccelTrabajo < 10 Or AccelTrabajo > 100 Then AccelTrabajo = 70
+If PesoCarga <= 0 Then PesoCarga = 5
+If ImpulsoPTP < 1 Or ImpulsoPTP > 100 Then ImpulsoPTP = 75
+If EsperaAbrir < 0.05 Or EsperaAbrir > 1 Then EsperaAbrir = 0.2
+TmReset 0                     'MOD@@ Guillermo Carrillo - v2.4: reloj para MedirTiempos
+Tool 0
+Weight PesoCarga              'load setting   'MOD@@ Guillermo Carrillo - v2.4 opcion 10 (antes: Weight 5)
+If InerciaCarga > 0 Then Inertia InerciaCarga
 Motor On                      'Power up the motor 
 'Fine 3, 3, 3, 3              '4 axis positioning accuracy setting 
-FineDist 0.1                  'Target point positioning accuracy setting£¨mm£©
+FineDist 0.1                  'Target point positioning accuracy setting(mm)
 Power High                    'High power mode setting 
-Speed 100                     'Internal speed setting  £¨£¥£©  
-SpeedS 2000                   'Linear speed setting    £¨mm/sec£©
+Speed 100                     'Internal speed setting  (%)  
+SpeedS 2000                   'Linear speed setting    (mm/sec)
 SpeedFactor I1                'External speed setting (%) 
 Accel 100, 100                'Acceleration and deceleration ratio setting (%)  
 AccelS 15000, 8000            'Acceleration and deceleration value setting (mm/sec2)  
-PTPBoost 75, 75, 75           'Nudge parameter setting   
+PTPBoost ImpulsoPTP, ImpulsoPTP, ImpulsoPTP   'Nudge parameter setting   'MOD@@ Guillermo Carrillo - v2.4 opcion 11 (antes: 75, 75, 75)
 'LimitTorque 20, 20, 20, 20   'Torque limit setting 
 
 'MOD@@ Guillermo Carrillo - v2.1.0 opcion 4: bajar el cilindro del gripper mientras el brazo llega
@@ -358,9 +395,9 @@ Function TEST_GO
 	'Fine 3, 3, 3, 3              '4 axis positioning accuracy setting 
 	FineDist 0.1                  'Target point positioning accuracy setting
 	Power High                    'High power mode setting 
-	Speed 100                     'Internal speed setting  £¨£¥£©  
-	SpeedS 2000                   'Linear speed setting    £¨mm/sec£©
-	SpeedFactor I1                'External speed setting (%) £¨£¥£©
+	Speed 100                     'Internal speed setting  (%)  
+	SpeedS 2000                   'Linear speed setting    (mm/sec)
+	SpeedFactor I1                'External speed setting (%) (%)
 	Accel 100, 100                'Acceleration and deceleration ratio setting (%)  
 	AccelS 15000, 8000            'Acceleration and deceleration value setting (mm/sec2)  
 	PTPBoost 75, 75, 75           'Nudge parameter setting   
@@ -411,7 +448,7 @@ Function Init
 
 '--- initialize boolean variable ---  
 B1 = False; B2 = False; B3 = False; B4 = False; B17 = True; B19 = False; B20 = True; B21 = True; B22 = True
-Print "Init again£¡£¡£¡£¡£¡£¡£¡£¡£¡"
+Print "Init again!!!!!!!!!"
 
 '--- Initialize integer variables ---  
 I1 = 30; I2 = 0; I3 = 0; I4 = 0; I5 = 10; I6 = 0; I7 = 0; I20 = 0; I21 = 0
@@ -541,7 +578,7 @@ Tool to_2
  R11 = -32; I3 = bli04; I8 = 3 'Array X Spacing; Array Y Spacing; Array Position Index; Array Rows (X direction)
 Call PalletOffset
 Hand P(bli03), Lefty
-Accel 70, 70
+Accel AccelFoto, AccelFoto   'MOD@@ Guillermo Carrillo - v2.4 opcion 6 (antes: Accel 70, 70)
 Go P(bli03) +X(R12) +Y(R13) /L
 
 'MOD@@ Guillermo Carrillo - v2.1.0 opcion 3: contesta tambien la posicion, igual que el 015
@@ -596,7 +633,7 @@ EndIf
  R11 = -32; I3 = bli06; I8 = 3 'Array X Spacing; Array Y Spacing; Array Position Index; Array Rows (X direction)
 Call PalletOffset
 Hand P(bli05), Lefty
-Accel 70, 70
+Accel AccelFoto, AccelFoto   'MOD@@ Guillermo Carrillo - v2.4 opcion 6 (antes: Accel 70, 70)
 Go P(bli05) +X(R12) +Y(R13) /L
 
 'Wait 0.1
@@ -1881,17 +1918,17 @@ Select bli25
   Case 1
   	Off G1Clamp
   	On G1Open '1 open handle
-  	Wait 0.2
+  	Wait EsperaAbrir   'MOD@@ Guillermo Carrillo - v2.4 opcion 12 (antes: Wait 0.2)
   	'Wait Sw(G1OpenSignal) = Off 'Wait for gripper 1 to open in place
   Case 2
   	Off G2Clamp
   	On G2Open '2 open handle
-  	Wait 0.2
+  	Wait EsperaAbrir   'MOD@@ Guillermo Carrillo - v2.4 opcion 12 (antes: Wait 0.2)
   	'Wait Sw(G2OpenSignal) = Off 'Wait for gripper 2 to open in place 	
   Case 3
   	Off G3Clamp
   	On G3Open '3 open handle
-  	Wait 0.2
+  	Wait EsperaAbrir   'MOD@@ Guillermo Carrillo - v2.4 opcion 12 (antes: Wait 0.2)
   	'Wait Sw(G3OpenSignal) = Off 'Wait for gripper 3 to open in place
   Default
 Send
@@ -2173,6 +2210,7 @@ Do
    '---------recevie From PC---------
    If ChkNet(201) > 0 Then
    Input #201, S10$
+   If MedirTiempos = True Then Print "T=" + Str$(Tmr(0)) + " RX " + S10$   'MOD@@ Guillermo Carrillo - v2.4 opcion 9
    Print "receive from PC=" + S10$
    Print #201, S10$
    Print "send to PC=" + S10$
@@ -2184,6 +2222,7 @@ Do
 '---------Send to PC-------------     
    If B1 = True And S11$ <> "" Then
       B1 = False
+      If MedirTiempos = True Then Print "T=" + Str$(Tmr(0)) + " TX " + S11$   'MOD@@ Guillermo Carrillo - v2.4 opcion 9
       Print #201, S11$
       Print S11$
       
